@@ -1,6 +1,13 @@
 package wenjalan.starbot.nli;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import wenjalan.starbot.nli.wrapper.LanguageModelJsonWrapper;
+import wenjalan.starbot.nli.wrapper.SequenceNodeJsonWrapper;
+
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -48,6 +55,16 @@ public class LanguageModel {
     // nodes: a Map of precursor sequences to Sequence Nodes
     private LanguageModel(Map<String, SequenceNode> nodes) {
         this.nodes = nodes;
+    }
+
+    // constructor
+    // modelWrapper: a LanguageModelJsonWrapper imported from a file to create a model from
+    private LanguageModel(LanguageModelJsonWrapper modelWrapper) {
+        this.nodes = new TreeMap<>();
+        Map<String, SequenceNodeJsonWrapper> wrapperNodes = modelWrapper.getNodes();
+        wrapperNodes.forEach((sequence, node) -> {
+            this.nodes.put(sequence, new SequenceNode(node.getPrecursorSequence(), node.getNextWords()));
+        });
     }
 
     // constructor method: from a corpus of sentences
@@ -143,12 +160,27 @@ public class LanguageModel {
 
     // exports the model to a file
     public void exportToFile(File file) throws IOException {
-        return;
+        LanguageModelJsonWrapper modelWrapper = new LanguageModelJsonWrapper(this);
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+        String json = gson.toJson(modelWrapper);
+        FileWriter writer = new FileWriter(file);
+        writer.write(json);
+        writer.flush();
     }
 
     // imports the model from a file
     public static LanguageModel importFromFile(File file) throws IOException {
-        return null;
+        Gson gson = new GsonBuilder().create();
+        FileReader reader = new FileReader(file);
+        LanguageModelJsonWrapper modelWrapper = gson.fromJson(reader, LanguageModelJsonWrapper.class);
+        return new LanguageModel(modelWrapper);
+    }
+
+    // returns the nodes of this LanguageModel
+    public Map<String, SequenceNode> getNodes() {
+        return this.nodes;
     }
 
 }

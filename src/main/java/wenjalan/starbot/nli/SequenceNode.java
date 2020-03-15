@@ -31,6 +31,14 @@ public class SequenceNode {
         });
     }
 
+    // constructor
+    // precursorSequence: the sequence of words leading up to this node
+    // nextWords: the map of next words to their occurrences
+    public SequenceNode(String precursorSequence, Map<String, Long> nextWords) {
+        this.precursorSequence = precursorSequence;
+        this.nextWords = nextWords;
+    }
+
     // returns a random word of the next sequence, weighted based on occurrences
     // requires O(n) time where n is the size of nextWords
     public String getNextWord() {
