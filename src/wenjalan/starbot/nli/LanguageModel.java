@@ -54,35 +54,42 @@ public class LanguageModel {
     private static LanguageModel fromSentences(List<String> sentences) {
         // map of sequences to possible next words
         Map<String, List<String>> sequences = new TreeMap<>();
+
         // create a node for every permutation of the sentence
         for (String sentence : sentences) {
+            // add the beginning of sentence escape sequence and end of sentence escape sequence to the sentence
+            sentence = STX + " " + sentence + " " + ETX;
             // get the tokens
-            StringTokenizer tokenizer = new StringTokenizer(sentence);
-            int tokenCount = tokenizer.countTokens();
-            // permutate the tokens
-            for (int i = 0; i < tokenCount; i++) {
-                // regenerate the tokenizer
-                tokenizer = new StringTokenizer(sentence);
-                // find the precursor sequence
-                StringBuilder stringBuilder = new StringBuilder();
+            String[] tokens = sentence.split("\\s+");
+
+            // for each word in the sentence, find each sequence that can precurse it
+            // Ex: I am (free)
+            // [I am (free)]
+            // [am (free)]
+            for (int i = 1; i < tokens.length; i++) {
+                // the next word
+                String word = tokens[i];
+                // the list of sequences that precurse this word
+                List<String> precursorSequences = new ArrayList<>();
+
+                // create all possible precursor sentences
                 for (int j = 0; j < i; j++) {
-                    stringBuilder.append(tokenizer.nextToken());
-                    stringBuilder.append(" ");
+                    // create the sequence
+                    StringBuilder sequenceBuilder = new StringBuilder();
+                    for (int k = j; k < i; k++) {
+                        sequenceBuilder.append(tokens[k]);
+                        sequenceBuilder.append(" ");
+                    }
+                    // add the sequence
+                    precursorSequences.add(sequenceBuilder.toString());
                 }
-                // get the precursor sequence (STX if beginning of sentence)
-                String precursorSequence = stringBuilder.length() != 0 ? stringBuilder.toString() : STX;
 
-                // get the next word (ETX if end of sentence)
-                String nextWord = tokenizer.hasMoreTokens() ? tokenizer.nextToken() : ETX;
-
-                // put into map
-                sequences.putIfAbsent(precursorSequence, new ArrayList<>());
-                sequences.get(precursorSequence).add(nextWord);
+                // put each sequence into the map with the next word as a prediction
+                precursorSequences.forEach((seq) -> {
+                    sequences.putIfAbsent(seq, new ArrayList<>());
+                    sequences.get(seq).add(word);
+                });
             }
-
-            // add the entire sentence plus the ETX escape sequence
-            sequences.putIfAbsent(sentence + " ", new ArrayList<>());
-            sequences.get(sentence + " ").add(ETX);
         }
 
         // create a list of SequenceNodes from the data
@@ -94,21 +101,31 @@ public class LanguageModel {
     }
 
     // generates a sequence of words up to a limit of words
-    public String nextSequence(/* int safety */) {
-        return nextSequence(STX/* , safety */);
+    // originality: the measure of the maximum number of words to look back at when predicting the next word
+    public String nextSequence(int originality) {
+        return nextSequence(STX, originality);
     }
 
     // recursive method to generate sequences
-    private String nextSequence(String precursorSequence/* , int safety */) {
+    private String nextSequence(String precursorSequence, int originality) {
         // if the ETX char is already present, return the sentence with the ETX char cut off
         if (precursorSequence.endsWith(ETX + " ")) return precursorSequence.substring(0, precursorSequence.length() - 3);
         else {
-            // find our precursor sequence up to #safety tokens
-            // String trimmedPrecursorSequence = trimSequence(precursorSequence, safety);
-            SequenceNode node = nodes.get(precursorSequence);
+            // find our precursor sequence with up to "originality" tokens
+            String[] tokens = precursorSequence.split("\\s+");
+            StringBuilder sequenceBuilder = new StringBuilder();
+            int start = Math.max(0, tokens.length - originality);
+            for (int i = start; i < tokens.length; i++) {
+                sequenceBuilder.append(tokens[i]);
+                sequenceBuilder.append(" ");
+            }
+            String limitedSequence = sequenceBuilder.toString();
+
+            // find the next word based on the limited sequence
+            SequenceNode node = nodes.get(limitedSequence);
             String nextWord = node.getNextWord();
             String newSequence = (precursorSequence.equals(STX) ? nextWord : precursorSequence + nextWord) + " ";
-            return nextSequence(newSequence/* , safety */);
+            return nextSequence(newSequence, originality);
         }
     }
 
