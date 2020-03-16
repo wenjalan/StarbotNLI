@@ -27,4 +27,5 @@ public class SequenceNodeJsonWrapper {
     public Map<String, Long> getNextWords() {
         return nextWords;
     }
+
 }

@@ -1,5 +1,8 @@
 package wenjalan.starbot.nli;
 
+import wenjalan.starbot.nli.test.StarbotNLIBot;
+
+import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,10 +10,7 @@ import java.util.List;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException  {
-        LanguageModel model = LanguageModel.importFromFile(new File("model.json"));
-        for (int i = 0; i < 50; i++) {
-            System.out.println(model.nextSequence(1));
-        }
+    public static void main(String[] args) throws LoginException {
+        new StarbotNLIBot(args[0]);
     }
 }
