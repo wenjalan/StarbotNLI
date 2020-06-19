@@ -3,6 +3,7 @@ package wenjalan.starbot.nli.model;
 import javax.annotation.Nonnull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 // represents a single term
 public class Vertex {
@@ -36,9 +37,44 @@ public class Vertex {
         return List.copyOf(edges);
     }
 
+    // returns whether or not this Vertex has an outgoing edge to another Vertex
+    public boolean hasEdgeTo(Vertex other) {
+        for (Edge edge : edges) {
+            if (edge.to().equals(other)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // returns the Edge from this Vertex to another Vertex, null if none
+    public Edge getEdgeTo(Vertex other) {
+        for (Edge edge : edges) {
+            if (edge.to().equals(other)) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
     // returns the String associated with this vertex
     public String string() {
         return this.string;
+    }
+
+    // equals
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Vertex vertex = (Vertex) o;
+        if (string == null || vertex.string == null) return false; // special case: start and end vertices
+        return string.equals(vertex.string);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(string);
     }
 
     // toString

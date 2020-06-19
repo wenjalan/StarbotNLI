@@ -1,34 +1,57 @@
 package wenjalan.starbot.nli;
 
-import wenjalan.starbot.nli.model.Edge;
+import wenjalan.starbot.nli.generators.SentenceGenerator;
 import wenjalan.starbot.nli.model.Model;
-import wenjalan.starbot.nli.model.SentenceGenerator;
-import wenjalan.starbot.nli.model.Vertex;
-import wenjalan.starbot.nli.test.StarbotNLIBot;
+import wenjalan.starbot.nli.model.factory.SentenceCorpus;
+import wenjalan.starbot.nli.model.factory.SentenceModelFactory;
 
-import javax.security.auth.login.LoginException;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Main {
 
-    public static void main(String[] args) throws LoginException {
+    public static void main(String[] args) {
         // new StarbotNLIBot(args[0]);
-        Model model = new Model();
-        Vertex a = new Vertex("a");
-        Vertex b = new Vertex("b");
-        Vertex c = new Vertex("c");
-        model.startVertex().addEdge(a, 1.0);
-        a.addEdge(a, 10.0);
-        a.addEdge(b, 1.0);
-        a.addEdge(c, 1.0);
-        b.addEdge(model.endVertex(), 1.0);
-        c.addEdge(model.endVertex(), 1.0);
+        SentenceCorpus corpus = new SentenceCorpus(word -> {
+            word = word.toLowerCase().trim();
+            if (word.charAt(word.length() - 1) == ',' ||
+                    word.charAt(word.length() - 1) == '.' ||
+                    word.charAt(word.length() - 1) == '?' ||
+                    word.charAt(word.length() - 1) == ';' ||
+                    word.charAt(word.length() - 1) == ':' ||
+                    word.charAt(word.length() - 1) == '\n') {
+                word = word.substring(0, word.length() - 1);
+            }
+            return word;
+        });
 
+        try (FileReader reader = new FileReader(new File("hamlet.txt"))) {
+            BufferedReader br = new BufferedReader(reader);
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                if (line.length() > 0 && line.split(" ").length > 1) {
+                    corpus.add(line);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileReader reader = new FileReader(new File("romeoandjuliet.txt"))) {
+            BufferedReader br = new BufferedReader(reader);
+            for (String line = br.readLine(); line != null; line = br.readLine()) {
+                if (line.length() > 0 && line.split(" ").length > 1) {
+                    corpus.add(line);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Model model = new SentenceModelFactory(corpus).buildModel();
         SentenceGenerator generator = new SentenceGenerator(model);
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 1000; i++) {
             System.out.println(generator.generateSentence());
         }
     }

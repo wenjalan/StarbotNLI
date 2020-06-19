@@ -10,7 +10,7 @@ public class Edge {
 
     // the weight of this edge
     // higher weight means stronger connection
-    final private double weight;
+    private double weight;
 
     // constructor
     public Edge(Vertex from, Vertex to, double weight) {
@@ -30,4 +30,9 @@ public class Edge {
     public double weight() {
         return weight;
     }
+
+    public void updateWeight(double weight) {
+        this.weight = weight;
+    }
+
 }

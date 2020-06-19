@@ -1,4 +1,8 @@
-package wenjalan.starbot.nli.model;
+package wenjalan.starbot.nli.generators;
+
+import wenjalan.starbot.nli.model.Edge;
+import wenjalan.starbot.nli.model.Model;
+import wenjalan.starbot.nli.model.Vertex;
 
 import java.util.Random;
 
@@ -6,7 +10,7 @@ import java.util.Random;
 public class SentenceGenerator {
 
     // the Model to use in generating sentences
-    private Model model;
+    private final Model model;
 
     // constructor
     public SentenceGenerator(Model model) {
@@ -47,7 +51,7 @@ public class SentenceGenerator {
         }
 
         // return the sentence
-        return sb.toString();
+        return sb.toString().trim();
     }
 
 }
