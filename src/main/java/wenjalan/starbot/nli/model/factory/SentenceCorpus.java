@@ -44,7 +44,7 @@ public class SentenceCorpus {
 
     // returns the sentences currently held in the corpus
     public List<String> sentences() {
-        return List.copyOf(this.sentences);
+        return new ArrayList<>(this.sentences);
     }
 
     // removes a sentence from the corpus, and all its copies

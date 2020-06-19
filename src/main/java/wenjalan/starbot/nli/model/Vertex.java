@@ -34,7 +34,7 @@ public class Vertex {
 
     // returns the list of edges outgoing from this vertex
     public List<Edge> edges() {
-        return List.copyOf(edges);
+        return new LinkedList<>(edges);
     }
 
     // returns whether or not this Vertex has an outgoing edge to another Vertex
@@ -55,6 +55,11 @@ public class Vertex {
             }
         }
         return null;
+    }
+
+    // returns the total weight of all the outgoing edges
+    public double totalEdgeWeights() {
+        return edges.stream().mapToDouble(Edge::weight).sum();
     }
 
     // returns the String associated with this vertex
