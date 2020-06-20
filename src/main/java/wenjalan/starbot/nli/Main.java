@@ -43,7 +43,7 @@ public class Main {
         Model model = new SentenceModelFactory(corpus).buildModel();
         SentenceGenerator generator = new SentenceGenerator(model);
         for (int i = 0; i < 50; i++) {
-            System.out.println(generator.generateSentence());
+            System.out.println(generator.generateSentence(0.0));
             System.out.println();
         }
     }

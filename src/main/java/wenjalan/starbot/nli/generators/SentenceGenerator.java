@@ -19,7 +19,8 @@ public class SentenceGenerator {
     }
 
     // generates a new sentence
-    public String generateSentence() {
+    // originality: a value from 0 (low) to 1 (high) that determines the strictness of adherence to the corpus
+    public String generateSentence(double originality) {
         // StringBuilder to build the sentence
         StringBuilder sb = new StringBuilder();
 
@@ -38,7 +39,7 @@ public class SentenceGenerator {
             histogram = predictNextWord(histogram, lastWord);
 
             // choose a word from that histogram
-            lastWord = getWordFromHistogram(histogram);
+            lastWord = getWordFromHistogram(histogram, originality);
         }
 
         // return the sentence
@@ -46,11 +47,26 @@ public class SentenceGenerator {
     }
 
     // randomly selects a word from a given histogram
-    private String getWordFromHistogram(Map<String,Double> histogram) {
-        double totalWeight = histogram.values().stream().mapToDouble(x -> x).sum();
+    // randomness: the degree to which to randomize the word chosen, weighted by their likelihood
+    private String getWordFromHistogram(Map<String,Double> histogram, double randomness) {
+        // trim the histogram based on randomness
+        Map<String, Double> weightedHistogram = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
+        int selectionSpace = (int) (histogram.size() * randomness);
+        // bound between 1 and the size of the original histogram
+        selectionSpace = Math.max(selectionSpace, 1);
+        selectionSpace = Math.min(selectionSpace, histogram.size());
+
+        // from greatest to least weight, add selectionSpace items to the weighted histogram
+        for (int i = 0; i < selectionSpace; i++) {
+            Map.Entry<String, Double> max = histogram.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).get();
+            weightedHistogram.put(max.getKey(), max.getValue());
+        }
+
+        // select a word from the weighted histogram
+        double totalWeight = weightedHistogram.values().stream().mapToDouble(x -> x).sum();
         double roll = new Random().nextDouble() * totalWeight;
         double originalRoll = roll;
-        for (Map.Entry<String, Double> e : histogram.entrySet()) {
+        for (Map.Entry<String, Double> e : weightedHistogram.entrySet()) {
             roll -= e.getValue();
             if (roll <= 0) {
                 return e.getKey();
