@@ -27,12 +27,10 @@ public class Main {
             return word;
         });
 
-        try (FileReader reader = new FileReader(new File("general.txt"))) {
+        try (FileReader reader = new FileReader(new File("hamlet.txt"))) {
             BufferedReader br = new BufferedReader(reader);
             for (String line = br.readLine(); line != null; line = br.readLine()) {
-                if (line.startsWith("***")) continue;
-                if (line.startsWith("[")) line = line.substring(70).trim();
-                if (line.length() > 0 && line.split(" ").length > 1) {
+                if (line.length() > 0 && line.split(" ").length > 3) {
                     corpus.add(line);
                 }
             }
@@ -43,8 +41,7 @@ public class Main {
         Model model = new SentenceModelFactory(corpus).buildModel();
         SentenceGenerator generator = new SentenceGenerator(model);
         for (int i = 0; i < 50; i++) {
-            System.out.println(generator.generateSentence(0.0));
-            System.out.println();
+            System.out.println(generator.generateSentence(0.10));
         }
     }
 }

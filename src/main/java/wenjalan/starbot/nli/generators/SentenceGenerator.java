@@ -56,9 +56,14 @@ public class SentenceGenerator {
         selectionSpace = Math.max(selectionSpace, 1);
         selectionSpace = Math.min(selectionSpace, histogram.size());
 
+        // create a copy of the histogram to destroy
+        Map<String, Double> copy = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
+        copy.putAll(histogram);
+
         // from greatest to least weight, add selectionSpace items to the weighted histogram
         for (int i = 0; i < selectionSpace; i++) {
-            Map.Entry<String, Double> max = histogram.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).get();
+            Map.Entry<String, Double> max = copy.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).get();
+            copy.remove(max.getKey());
             weightedHistogram.put(max.getKey(), max.getValue());
         }
 
@@ -94,7 +99,9 @@ public class SentenceGenerator {
                 lastWordHistogram.put(word, e.getValue());
             }
             else {
-                lastWordHistogram.put(word, (lastWordHistogram.get(word) * 0.5 + guessHistogram.get(word)));
+                if (word != null) {
+                    lastWordHistogram.put(word, (lastWordHistogram.get(word) * 0.5 + guessHistogram.get(word)));
+                }
             }
         }
 
