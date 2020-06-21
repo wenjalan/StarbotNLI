@@ -10,6 +10,9 @@ import java.util.*;
 // generates sentence given a Model
 public class SentenceGenerator {
 
+    // the weight of recurrence histograms
+    public static final double RECURRENCE_WEIGHT = 0.25;
+
     // the Model to use in generating sentences
     private final Model model;
 
@@ -34,38 +37,30 @@ public class SentenceGenerator {
         while (lastWord != null) {
             // add the lastWord to the builder
             sb.append(lastWord).append(" ");
+            // System.out.print(lastWord + " ");
 
             // get a prediction for the next word
-            histogram = predictNextWord(histogram, lastWord);
+            histogram = predictNextWord(histogram, lastWord, originality);
 
             // choose a word from that histogram
             lastWord = getWordFromHistogram(histogram, originality);
         }
 
         // return the sentence
+        // System.out.println();
         return sb.toString().trim();
     }
 
     // randomly selects a word from a given histogram
     // randomness: the degree to which to randomize the word chosen, weighted by their likelihood
     private String getWordFromHistogram(Map<String,Double> histogram, double randomness) {
-        // trim the histogram based on randomness
-        Map<String, Double> weightedHistogram = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
         int selectionSpace = (int) (histogram.size() * randomness);
         // bound between 1 and the size of the original histogram
         selectionSpace = Math.max(selectionSpace, 1);
         selectionSpace = Math.min(selectionSpace, histogram.size());
 
-        // create a copy of the histogram to destroy
-        Map<String, Double> copy = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
-        copy.putAll(histogram);
-
-        // from greatest to least weight, add selectionSpace items to the weighted histogram
-        for (int i = 0; i < selectionSpace; i++) {
-            Map.Entry<String, Double> max = copy.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).get();
-            copy.remove(max.getKey());
-            weightedHistogram.put(max.getKey(), max.getValue());
-        }
+        // prune
+        Map<String, Double> weightedHistogram = pruneHistogram(histogram, selectionSpace);
 
         // select a word from the weighted histogram
         double totalWeight = weightedHistogram.values().stream().mapToDouble(x -> x).sum();
@@ -80,27 +75,67 @@ public class SentenceGenerator {
         throw new IllegalStateException("Encountered an error while choosing a word from the histogram (histogram size:" + histogram.size() + ", weight:" + totalWeight + ", roll:" + originalRoll + ")");
     }
 
+    // returns a histogram choosing containing only the top n elements
+    // also removes all entries with a value of 0
+    private Map<String, Double> pruneHistogram(Map<String, Double> histogram, int n) {
+        // trim the histogram based on randomness
+        Map<String, Double> trimmed = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
+
+        // create a copy of the histogram to destroy
+        Map<String, Double> copy = new TreeMap<>(Comparator.nullsFirst(Comparator.naturalOrder()));
+        for (Map.Entry<String, Double> stringDoubleEntry : histogram.entrySet()) {
+            if (stringDoubleEntry.getValue() != 0) {
+                copy.put(stringDoubleEntry.getKey(), stringDoubleEntry.getValue());
+            }
+        }
+
+        // from greatest to least weight, add selectionSpace items to the weighted histogram
+        for (int i = 0; i < n; i++) {
+            Map.Entry<String, Double> max = copy.entrySet().stream().max(Map.Entry.comparingByValue()).get();
+            copy.remove(max.getKey());
+            trimmed.put(max.getKey(), max.getValue());
+        }
+
+        return trimmed;
+    }
+
     // predicts the next word given the previous guess and the true last word
-    private Map<String, Double> predictNextWord(@Nullable Map<String, Double> lastGuessHistogram, String lastWord) {
+    private Map<String, Double> predictNextWord(@Nullable Map<String, Double> lastGuessHistogram, String lastWord, double randomness) {
         // if the last guess is null, return the histogram for the lastWord
         if (lastGuessHistogram == null) {
             return nextWordsHistogram(null);
         }
 
-        // otherwise, combine the results of the best predicted word in the lastGuestHistogram and the lastWord histogram
-        String lastBestGuess = lastGuessHistogram.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue)).get().getKey();
-        Map<String, Double> guessHistogram = nextWordsHistogram(lastBestGuess);
+        // trim the lastGuessHistogram down based on randomness
+        int selectionSpace = (int) (lastGuessHistogram.size() * randomness);
+        // bound between 1 and the size of the original histogram
+        selectionSpace = Math.max(selectionSpace, 1);
+        selectionSpace = Math.min(selectionSpace, lastGuessHistogram.size());
+
+        // prune
+        lastGuessHistogram = pruneHistogram(lastGuessHistogram, selectionSpace);
+
+        // combine the results of the best predicted words in the lastGuestHistogram and the lastWord histogram
+        List<Map<String, Double>> lastHistograms = new LinkedList<>();
+        for (String word : lastGuessHistogram.keySet()) {
+            lastHistograms.add(nextWordsHistogram(word));
+        }
         Map<String, Double> lastWordHistogram = nextWordsHistogram(lastWord);
 
+        // weight of all lastHistograms
+        double lastHistogramsWeight = (1.0 / lastHistograms.size()) * RECURRENCE_WEIGHT;
+
         // combine the maps
-        for (Map.Entry<String, Double> e : guessHistogram.entrySet()) {
-            String word = e.getKey();
-            if (!lastWordHistogram.containsKey(word)) {
-                lastWordHistogram.put(word, e.getValue());
-            }
-            else {
-                if (word != null) {
-                    lastWordHistogram.put(word, (lastWordHistogram.get(word) * 0.5 + guessHistogram.get(word)));
+        for (Map<String, Double> lastHistogram : lastHistograms) {
+            for (Map.Entry<String, Double> e : lastHistogram.entrySet()) {
+                String word = e.getKey();
+                if (!lastWordHistogram.containsKey(word)) {
+                    lastWordHistogram.put(word, e.getValue() * lastHistogramsWeight);
+                }
+                else {
+                    if (word != null) {
+                        lastWordHistogram.put(word, (lastWordHistogram.get(word) + lastHistogram.get(word) * lastHistogramsWeight));
+                    }
                 }
             }
         }

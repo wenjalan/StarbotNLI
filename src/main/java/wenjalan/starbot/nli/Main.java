@@ -13,7 +13,6 @@ import java.io.IOException;
 public class Main {
 
     public static void main(String[] args) {
-        // new StarbotNLIBot(args[0]);
         SentenceCorpus corpus = new SentenceCorpus(word -> {
             word = word.toLowerCase().trim();
             if (word.charAt(word.length() - 1) == ',' ||
@@ -30,7 +29,7 @@ public class Main {
         try (FileReader reader = new FileReader(new File("hamlet.txt"))) {
             BufferedReader br = new BufferedReader(reader);
             for (String line = br.readLine(); line != null; line = br.readLine()) {
-                if (line.length() > 0 && line.split(" ").length > 3) {
+                if (line.length() > 0) { // && line.split(" ").length > 1) {
                     corpus.add(line);
                 }
             }
@@ -41,7 +40,8 @@ public class Main {
         Model model = new SentenceModelFactory(corpus).buildModel();
         SentenceGenerator generator = new SentenceGenerator(model);
         for (int i = 0; i < 50; i++) {
-            System.out.println(generator.generateSentence(0.10));
+            System.out.println(generator.generateSentence(0.30));
+            // generator.generateSentence(0.10);
         }
     }
 }

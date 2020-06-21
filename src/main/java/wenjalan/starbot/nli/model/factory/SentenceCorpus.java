@@ -1,6 +1,7 @@
 package wenjalan.starbot.nli.model.factory;
 
 import javax.annotation.Nullable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +66,24 @@ public class SentenceCorpus {
                     .collect(Collectors.joining(" "));
         }
         return sentence;
+    }
+
+    // saves this corpus to a file
+    public void saveToFile(File f) throws IOException {
+        FileWriter writer = new FileWriter(f);
+        for (String sentence : sentences) {
+            writer.write(sentence + "\n");
+        }
+        writer.flush();
+    }
+
+    // reads the corpus from a file
+    public void readFromFile(File f) throws IOException {
+        FileReader reader = new FileReader(f);
+        BufferedReader br = new BufferedReader(reader);
+        for (String line = br.readLine(); line != null; line = br.readLine()) {
+            add(line);
+        }
     }
 
 }
