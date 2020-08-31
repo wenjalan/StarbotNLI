@@ -1,41 +1,55 @@
 package wenjalan.starbot.nli;
 
 import edu.stanford.nlp.simple.*;
+import javafx.util.Pair;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 // main class
 public class NaturalLanguageEngine {
 
-    private static final String SENTENCE_END = "" + (char) 3;
-    private static final String SENTENCE_START = "" + (char) 2;
+    public static final String SENTENCE_END = "</s>";// + (char) 3;
+    public static final String SENTENCE_START = "<s>";// + (char) 2;
 
-    // args: a list of files to act as corpi
-    public static void main(String[] args) {
-        // load corpi
-        File[] corpi = new File[args.length];
-        for (int i = 0; i < args.length; i++) {
-            corpi[i] = new File(args[i]);
-            if (corpi[i].exists()) {
-                System.out.println("Loaded corpus " + corpi[i].getName());
-            }
-            else {
-                System.err.println("Couldn't load corpus " + args[i]);
-            }
-        }
+    // a list of predictors used to create sentences
+    List<Predictor> predictors;
 
-        // create an engine
-        NaturalLanguageEngine e = new NaturalLanguageEngine(corpi);
-        for (int i = 0; i < 10; i++) {
-            System.out.println(e.generateSentence());
-        }
-    }
+//    // args: a list of files to act as corpi
+//    public static void main(String[] args) {
+//        // load corpi
+//        File[] corpi = new File[args.length];
+//        for (int i = 0; i < args.length; i++) {
+//            corpi[i] = new File(args[i]);
+//            if (corpi[i].exists()) {
+//                System.out.println("Loaded corpus " + corpi[i].getName());
+//            }
+//            else {
+//                System.err.println("Couldn't load corpus " + args[i]);
+//            }
+//        }
+//
+//        // create an engine
+//        NaturalLanguageEngine e = new NaturalLanguageEngine(corpi);
+//        for (int i = 0; i < 10; i++) {
+//            System.out.println(e.generateSentence());
+//        }
+//    }
 
     // constructor
     public NaturalLanguageEngine(File[] corpi) {
         // initialize nodes
+        try {
+            predictors = new LinkedList<>();
+            predictors.add(new BiGramPredictor(corpi));
+            // todo: add more predictors here
 
+        } catch (IOException e) {
+            System.err.println("Error while initializing predictors");
+            e.printStackTrace();
+        }
     }
 
     // generates a sentence
@@ -71,11 +85,47 @@ public class NaturalLanguageEngine {
     // pre: sentence has at least 1 word in it (at least the starting sentinel)
     // returns: a word that comes after the words in the sentence
     private String predictNextWord(ArrayList<String> sentence) {
-        if (sentence.size() > 3) {
-            return SENTENCE_END;
-        } else {
-            return "RUSHIA";
+        // have all the predictors predict
+        List<Map<String, Long>> predictions = new ArrayList<>();
+        for (Predictor predictor : predictors) {
+            predictions.add(predictor.predictNextWord(sentence));
         }
+
+        // todo: temp combination algorithm
+        Map<String, Long> finalPrediction = new TreeMap<>();
+        for (Map<String, Long> prediction : predictions) {
+            for (Map.Entry<String, Long> entry : prediction.entrySet()) {
+                finalPrediction.putIfAbsent(entry.getKey(), 0L);
+                finalPrediction.put(entry.getKey(), finalPrediction.get(entry.getKey()) + entry.getValue());
+            }
+        }
+
+        // pick the value with the highest
+//        String highest = null;
+//        for (String s : finalPrediction.keySet()) {
+//            if (highest == null || finalPrediction.get(s) > finalPrediction.get(highest)) {
+//                highest = s;
+//            }
+//        }
+//        return highest;
+        return chooseWeightedRandom(finalPrediction);
+    }
+
+    // returns an element E, randomized weighted on its value
+    // greater values greater chances
+    private static <E> E chooseWeightedRandom(Map<E, Long> map) {
+        int weightSum = 0;
+        for (Long value : map.values()) {
+            weightSum += value;
+        }
+        int ceiling = new Random().nextInt(weightSum) + 1;
+        for (E e : map.keySet()) {
+            ceiling -= map.get(e);
+            if (ceiling <= 0) {
+                return e;
+            }
+        }
+        throw new IllegalStateException("Out of bounds roll");
     }
 
 }
