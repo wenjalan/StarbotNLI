@@ -9,7 +9,7 @@ import java.util.List;
 public class NaturalLanguageEngineTests {
 
 //    static File[] testFiles = {new File("test.txt"), new File("test2.txt")};
-    static File[] testFiles = {new File("test.txt")};
+    static File[] testFiles = {new File("general.txt")};
 
     static NaturalLanguageEngine engine;
 

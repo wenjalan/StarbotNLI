@@ -44,6 +44,7 @@ public class NaturalLanguageEngine {
         try {
             predictors = new LinkedList<>();
             predictors.add(new BiGramPredictor(corpi));
+            predictors.add(new PartOfSpeechPredictor(corpi));
             // todo: add more predictors here
 
         } catch (IOException e) {
@@ -113,7 +114,7 @@ public class NaturalLanguageEngine {
 
     // returns an element E, randomized weighted on its value
     // greater values greater chances
-    private static <E> E chooseWeightedRandom(Map<E, Long> map) {
+    public static <E> E chooseWeightedRandom(Map<E, Long> map) {
         int weightSum = 0;
         for (Long value : map.values()) {
             weightSum += value;
