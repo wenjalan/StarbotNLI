@@ -33,6 +33,9 @@ public class BiGramPredictor implements Predictor {
             long lineNo = 1;
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                 try {
+                    if (line.trim().isEmpty()) {
+                        continue;
+                    }
                     // make a sentence of the line
                     Sentence sentence = new Sentence(line);
 

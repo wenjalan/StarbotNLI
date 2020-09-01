@@ -12,7 +12,7 @@ import static wenjalan.starbot.nli.NaturalLanguageEngine.*;
 
 // predicts based on POS, giving words with recognized POS patterns advantage
 // uses bigrams
-public class PartOfSpeechPredictor implements Predictor {
+public class PartOfSpeechPredictor implements Predictor, Transformer {
 
     // POS mapped to next POS and their occurrences
     Map<String, Map<String, Long>> bigrams;
@@ -38,6 +38,9 @@ public class PartOfSpeechPredictor implements Predictor {
             BufferedReader reader = new BufferedReader(new FileReader(file.getName()));
             long lineNo = 1;
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
                 try {
                     // make a sentence of the line
                     Sentence sentence = new Sentence(line);
@@ -98,6 +101,18 @@ public class PartOfSpeechPredictor implements Predictor {
             ret.put(word, 1L);
         }
         return ret;
+    }
+
+    // applies this predictor's predictions on top of another predictor's prediction
+    // post: prediction is modified with this predictor's weights
+    @Override
+    public void transformPrediction(Map<String, Long> prediction, List<String> sentence, double weight) {
+        Map<String, Long> selfPrediction = predictNextWord(sentence);
+        for (String s : selfPrediction.keySet()) {
+            if (prediction.containsKey(s)) {
+                prediction.put(s, (long) (prediction.get(s) * weight));
+            }
+        }
     }
 
 }

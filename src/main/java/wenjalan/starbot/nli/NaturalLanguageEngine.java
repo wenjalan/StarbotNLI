@@ -17,6 +17,9 @@ public class NaturalLanguageEngine {
     // a list of predictors used to create sentences
     List<Predictor> predictors;
 
+    // a list of transformers used to modify predictions
+    List<Transformer> transformers;
+
 //    // args: a list of files to act as corpi
 //    public static void main(String[] args) {
 //        // load corpi
@@ -44,8 +47,12 @@ public class NaturalLanguageEngine {
         try {
             predictors = new LinkedList<>();
             predictors.add(new BiGramPredictor(corpi));
-            predictors.add(new PartOfSpeechPredictor(corpi));
+            // predictors.add(new PartOfSpeechPredictor(corpi));
             // todo: add more predictors here
+
+            // todo: add more transformers here
+            transformers = new LinkedList<>();
+            transformers.add(new PartOfSpeechPredictor(corpi));
 
         } catch (IOException e) {
             System.err.println("Error while initializing predictors");
@@ -99,6 +106,11 @@ public class NaturalLanguageEngine {
                 finalPrediction.putIfAbsent(entry.getKey(), 0L);
                 finalPrediction.put(entry.getKey(), finalPrediction.get(entry.getKey()) + entry.getValue());
             }
+        }
+
+        // todo: temp transformer algorithm
+        for (Transformer transformer : transformers) {
+            transformer.transformPrediction(finalPrediction, sentence, 1000.0);
         }
 
         // pick the value with the highest
